@@ -1,0 +1,8 @@
+.csv files seem easy to work with
+
+1. Figure out which programming language to use
+2. Figure out program specifications
+3. Make syntax
+4. Get working in console
+5. Figure out GUI
+
