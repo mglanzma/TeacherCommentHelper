@@ -52,30 +52,55 @@ Setting up GUI
 userFileInput = ""
 
 # method to create gui window
-def create_window():
-    sg.theme('GrayGrayGray')
+def create_window(theme):
+    sg.theme(theme)
 
-    menu_layout = [['File',['Open','---','Exit']]]
+    menu_layout = [['File',['---','Exit']],
+                   ['Open',['Open Student Data','Open Comment Template']],
+                   ['Theme',['Light','Gray','Dark','Dark Fancy']]]
 
-    layout = [[sg.Menu(menu_layout)]]
+    column_L = [[sg.Multiline(size=(20,20), key='-COMMENT_INPUT-')],
+                [sg.Multiline(size=(20,20), key='-COMMENT_OUTPUT-')]]
+
+    column_R = [[sg.Text('Current Student: '), sg.Text('', key='-CurrStudent_Text-')],
+                 [sg.Button('Prev', key='-Prev_Student-'), sg.Button('Next', key='-Next_Student-')]]
+
+    layout = [[sg.Menu(menu_layout)],
+              [sg.Col(column_L, p=0), sg.Col(column_R, p=0)]]
 
     return sg.Window('Comment Helper', layout)
 
 
 
 # creating an instance of our gui window
-window = create_window()
+window = create_window('GrayGrayGray')
 
 while True:
     event, values = window.read()
 
+    # Close Window Conditions
     if event == sg.WIN_CLOSED:
         break
 
     if event == 'Exit':
         break
 
-    if event == 'Open':
+    # Change Theme Conditions
+    if event == 'Light':
+        window.close()
+        window = create_window('GrayGrayGray')
+    if event == 'Gray':
+        window.close()
+        window = create_window('DarkGrey13')
+    if event == 'Dark':
+        window.close()
+        window = create_window('Black')
+    if event == 'Dark Fancy':
+        window.close()
+        window = create_window('DarkGrey15')
+
+    # Open File Conditions
+    if event == 'Open Student Data':
         file_path = sg.popup_get_file('open',no_window=True)
 
         if file_path:
