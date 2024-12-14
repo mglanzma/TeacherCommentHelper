@@ -18,7 +18,7 @@ def parseFileData(fileName):
     # list of list of student data ordered by headers
     studentData = []
 
-    with open(userFileInput, 'r') as csvfile:
+    with open(fileName, 'r') as csvfile:
 
         # csv reader
         csvreader = csv.reader(csvfile)
@@ -34,9 +34,34 @@ def parseFileData(fileName):
     return headers, studentData
 
 
+# method called when loading comment template
+def loadCommentTemplate(fileName):
+    fullComment = ""
+    commentList = []
+    
+    with open(fileName, 'r') as file:
+        for line in file:
+            fullComment += line
+
+    commentList = fullComment.strip().split("-----")
+    commentInput = commentList[0]
+
+    return commentList, commentInput
+
+
+
 # method used to generate a comment with supplied data & format
+def generateStudentComment(commentInput, studentIndex, headers, studentData):
+    workingComment = commentInput
+    valIndex = 0
+    # checking for each type of header variable in comment
+    for val in headers:
+        if ("{"+val+"}") in workingComment:
+            workingComment = workingComment.replace(("{"+val+"}"), studentData[studentIndex][valIndex])
+        
+        valIndex += 1
 
-
+    return workingComment
 
 
 
@@ -60,8 +85,8 @@ def create_window(theme):
     column_L = [[sg.Multiline(size=(20,20), key='-COMMENT_INPUT-', enable_events=True)],
                 [sg.Multiline(size=(20,20), key='-COMMENT_OUTPUT-')]]
 
-    column_R = [[sg.Text('Current Student: '), sg.Text('', key='-CurrStudent_Text-')],
-                 [sg.Button('Prev', key='-Prev_Student-'), sg.Button('Next', key='-Next_Student-')]]
+    column_R = [[sg.Text('Current Student: '), sg.Text('Open -> Open Student Data', key='-CurrStudent_Text-')],
+                 [sg.Button('Prev', key='-Prev_Student-', visible=False), sg.Button('Next', key='-Next_Student-', visible=False)]]
 
     layout = [[sg.Menu(menu_layout)],
               [sg.Col(column_L, p=0), sg.Col(column_R, p=0)]]
@@ -77,6 +102,7 @@ window = create_window('GrayGrayGray')
 headers = []
 studentData = []
 currentStudentIndex = 0
+fullCommentTemplate = []
 commentInput = ""
 
 myThemes = ['Light','Gray','Dark','Dark Fancy']
@@ -112,33 +138,57 @@ while True:
 
         if file_path:
             myFilePath = Path(file_path)
-            userFileInput = file_path
+            #userFileInput = file_path
 
-            headers, studentData = parseFileData(userFileInput)
+            headers, studentData = parseFileData(myFilePath)
 
             window['-CurrStudent_Text-'].update(studentData[currentStudentIndex][0])
+            window['-Prev_Student-'].update(visible=True)
+            window['-Next_Student-'].update(visible=True)
 
             print("\n\n")
             print(headers)
             print("\n\n")
             print(studentData)
 
+    if event == 'Open Comment Template':
+        file_path = sg.popup_get_file('open',no_window=True)
+        if file_path:
+            myFilePath = Path(file_path)
+
+            fullCommentTemplate, commentInput = loadCommentTemplate(myFilePath)
+            personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+            window['-COMMENT_INPUT-'].update(commentInput)
+            window['-COMMENT_OUTPUT-'].update(personalComment)
+
+
+
+
     # moving through students (prev/next)
     if event == '-Prev_Student-':
         if currentStudentIndex > 0:
             currentStudentIndex -= 1
+
+        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+        window['-COMMENT_OUTPUT-'].update(personalComment)
         window['-CurrStudent_Text-'].update(studentData[currentStudentIndex][0])
 
     if event == '-Next_Student-':
         if currentStudentIndex < len(studentData) - 1:
             currentStudentIndex += 1
+        
+        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+        window['-COMMENT_OUTPUT-'].update(personalComment)
         window['-CurrStudent_Text-'].update(studentData[currentStudentIndex][0])
 
     # for input comment box
     if event == '-COMMENT_INPUT-':
         commentInput = values['-COMMENT_INPUT-']
-        window['-COMMENT_OUTPUT-'].update(values['-COMMENT_INPUT-'])
-
+        if headers == None:
+            window['-COMMENT_OUTPUT-'].update(values['-COMMENT_INPUT-'])
+        else:
+            personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+            window['-COMMENT_OUTPUT-'].update(personalComment)
 
 # closes window if 'X' button is clicked
 window.close()
