@@ -277,10 +277,6 @@ while True:
             window['-PROGRESS-'].update_bar((currentStudentIndex),(len(studentData)-1))
             window['-PROGRESS-'].update(visible=True)
 
-            print("\n\n")
-            print(headers)
-            print("\n\n")
-            print(studentData)
 
     if event == 'Open Comment Template':
         file_path = sg.popup_get_file('open',no_window=True)

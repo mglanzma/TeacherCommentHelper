@@ -1,0 +1,14 @@
+This comment is all about {First} {Last}!
+
+{First} may or may not secretly be a superhero, but {SingularPronoun} doesn't want you to know!
+Without going into too much detail, {PossesivePronoun} candy bar collection amounts to {CandyBars} candy bars! {Optional1}
+
+{Optional2}
+{Optional3}
+-----
+One of {First}'s famous quotes is: {ExtraSentence}
+-----
+Just to repeat, {First} has {CandyBars} candy bars in {PossesivePronoun} possesion!
+Where {SingularPronoun} got these candy bars is unkown
+-----
+Plus, {First} {Last} wants you to know "{FavSentence}"
