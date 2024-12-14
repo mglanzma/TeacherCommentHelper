@@ -51,16 +51,32 @@ def loadCommentTemplate(fileName):
 
 
 # method used to generate a comment with supplied data & format
-def generateStudentComment(commentInput, studentIndex, headers, studentData):
+def generateStudentComment(commentInput, studentIndex, headers, studentData, checkboxVals, optionalVals):
+
     workingComment = commentInput
+
+    # filling in any optional sentences
+    oValIndex = 0
+    for val in checkboxVals:
+        if val:
+            if("{Optional"+str(oValIndex+1)+"}") in workingComment:
+                workingComment = workingComment.replace(("{Optional"+str(oValIndex+1)+"}"), optionalVals[oValIndex].strip())
+        else:
+            workingComment = workingComment.replace(("{Optional"+str(oValIndex+1)+"}"), "".strip())
+
+        oValIndex += 1
+
+
+
     valIndex = 0
     # checking for each type of header variable in comment
     for val in headers:
         if ("{"+val+"}") in workingComment:
-            workingComment = workingComment.replace(("{"+val+"}"), studentData[studentIndex][valIndex])
+            workingComment = workingComment.replace(("{"+str(val)+"}"), studentData[studentIndex][valIndex])
         
         valIndex += 1
 
+    
     return workingComment
 
 
@@ -86,8 +102,16 @@ def create_window(theme):
     column_L = [[sg.Multiline(default_text='Go to "Instructions" for help or begin loading in your files in the correct format', size=(50,20), key='-COMMENT_INPUT-', enable_events=True)],
                 [sg.Multiline(size=(50,20), key='-COMMENT_OUTPUT-')]]
 
-    column_R = [[sg.Text('Current Student: '), sg.Text('Open -> Open Student Data', key='-CurrStudent_Text-')],
-                 [sg.Button('Prev', key='-Prev_Student-', visible=False), sg.Button('Next', key='-Next_Student-', visible=False)]]
+    column_R = [[sg.Text('Your Progress:',visible=False,key='-progress_text-')],
+                [sg.ProgressBar(1,key='-PROGRESS-',visible=False,size=(20,20))],
+                [sg.Text()],
+                [sg.Text('Current Student: '), sg.Text('Open -> Open Student Data', key='-CurrStudent_Text-')],
+                 [sg.Button('Prev', key='-Prev_Student-', visible=False), sg.Button('Next', key='-Next_Student-', visible=False)],
+                [sg.Checkbox('Include Optional Sentence #1',key='-Optional1-',visible=False,default=False,enable_events=True)],
+                [sg.Checkbox('Include Optional Sentence #2',key='-Optional2-',visible=False,default=False,enable_events=True)],
+                [sg.Checkbox('Include Optional Sentence #3',key='-Optional3-',visible=False,default=False,enable_events=True)],
+                [sg.Checkbox('Include Optional Sentence #4',key='-Optional4-',visible=False,default=False,enable_events=True)],
+                [sg.Checkbox('Include Optional Sentence #5',key='-Optional5-',visible=False,default=False,enable_events=True)]]
 
     layout = [[sg.Menu(menu_layout)],
               [sg.Col(column_L, p=0), sg.Col(column_R, p=0)]]
@@ -110,6 +134,7 @@ def create_instructions(currentTheme):
         NOTES: 
         - While Instructions Window is open, Comment Helper Window will be unable to process inputs
         - Change Theme before loading data to avoid bugs
+        - Using incorrect file formatting will result in errors/crashes
 
 
 1. Go to "Open" in menu
@@ -119,10 +144,11 @@ def create_instructions(currentTheme):
 
 3. Once you have added the data, go back to "Open" and click "Open Comment Template"
 \t- Your comment templates should have normal text with "{var}" to use student data. Substitue "var" with the name of the column you want to include data from.
-\t- Optional comment lines should be included after your primary comment and a "-----" separator to indicate they are optional lines. You may have up to 5 optional comment lines in addition to the main comment.
+\t- To use optional sentences, put "{Optional#}" in your main comment where "#" is replaced with a digit 1-5.
+\t- Optional sentence should be included after your primary comment and a "-----" separator to indicate they are optional sentences. You may have up to 5 optional sentences in addition to the main comment.
 
 4. Begin copying generic comments from the generic output
-\t- If the optional line checkbox has not been checked, the optional line will be excluded from the output comment
+\t- If the optional sentence checkbox has not been checked, the optional sentence will be excluded from the output comment
         
 \nEXAMPLE FILES INCLUDED IN OTHER TABS OF THIS WINDOW
     """
@@ -137,15 +163,19 @@ Franklin,McDonald,he,his,A-,2023,"always smiling."
     # text for Comment File Example
     commentsExample = """{First} {Last} got a {Grade} in my class this year. I had a fantastic time teaching {First}, and I love {PossesivePronoun} attitude!
 
+I will include the first optional sentence here: {Optional1}
+
+The third will go here: {Optional 3}
+
 {First} is {Extra}
 -----
-This is the Optional Comment 1, but still includes {First}'s name!
+This is the Optional Sentence #1, but still includes {First}'s name!
 -----
-This is Optional Comment 2. The divider between optional comments is five hyphens.
+This is Optional Sentence #2. The divider between optional comments is five hyphens.
 -----
-Remember, you can only have one main comment followed by 5 optional comments
+Remember, you can only have one main comment followed by 5 optional sentences
 -----
-This is optional comment 4. There is no divider after your last optional comment!
+This is optional sentence #4. There is no divider after your last optional comment! I could have a fifth optional sentence, but I don't need to!
     """
 
     # Creating tabs to use in layout
@@ -185,6 +215,13 @@ studentData = []
 currentStudentIndex = 0
 fullCommentTemplate = []
 commentInput = ""
+
+# default optional sentence values
+optional = ["","","","",""]
+
+# default values for checkboxVals
+myCheckboxes = ['-Optional1-','-Optional2-','-Optional3-','-Optional4-','-Optional5-']
+checkboxVals = [False,False,False,False,False]
 
 # theme menu labels to cut down on extra cases
 myThemes = ['Light','Gray','Dark','Dark Fancy']
@@ -236,6 +273,9 @@ while True:
             window['-CurrStudent_Text-'].update(studentData[currentStudentIndex][0])
             window['-Prev_Student-'].update(visible=True)
             window['-Next_Student-'].update(visible=True)
+            window['-progress_text-'].update(visible=True)
+            window['-PROGRESS-'].update_bar((currentStudentIndex),(len(studentData)-1))
+            window['-PROGRESS-'].update(visible=True)
 
             print("\n\n")
             print(headers)
@@ -247,8 +287,27 @@ while True:
         if file_path:
             myFilePath = Path(file_path)
 
+            # getting main and optional sentences
             fullCommentTemplate, commentInput = loadCommentTemplate(myFilePath)
-            personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+            # optional sentences
+            if len(fullCommentTemplate) >= 2:
+                optional[0] = fullCommentTemplate[1]
+                window['-Optional1-'].update(visible=True)
+            if len(fullCommentTemplate) >= 3:
+                optional[1] = fullCommentTemplate[2]
+                window['-Optional2-'].update(visible=True)
+            if len(fullCommentTemplate) >= 4:
+                optional[2] = fullCommentTemplate[3]
+                window['-Optional3-'].update(visible=True)
+            if len(fullCommentTemplate) >= 5:
+                optional[3] = fullCommentTemplate[4]
+                window['-Optional4-'].update(visible=True)
+            if len(fullCommentTemplate) >= 6:
+                optional[4] = fullCommentTemplate[5]
+                window['-Optional5-'].update(visible=True)
+
+            
+            personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData, checkboxVals, optional)
             window['-COMMENT_INPUT-'].update(commentInput)
             window['-COMMENT_OUTPUT-'].update(personalComment)
 
@@ -260,17 +319,52 @@ while True:
         if currentStudentIndex > 0:
             currentStudentIndex -= 1
 
-        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData, checkboxVals, optional)
         window['-COMMENT_OUTPUT-'].update(personalComment)
         window['-CurrStudent_Text-'].update(studentData[currentStudentIndex][0])
+        window['-PROGRESS-'].update_bar((currentStudentIndex))
 
     if event == '-Next_Student-':
         if currentStudentIndex < len(studentData) - 1:
             currentStudentIndex += 1
         
-        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData, checkboxVals, optional)
         window['-COMMENT_OUTPUT-'].update(personalComment)
         window['-CurrStudent_Text-'].update(studentData[currentStudentIndex][0])
+        window['-PROGRESS-'].update_bar((currentStudentIndex))
+
+
+    # events for checking/unchecking optional sentence checkbox
+    if event in myCheckboxes:
+        match event:
+            case "-Optional1-":
+                if values["-Optional1-"]:
+                    checkboxVals[0] = True
+                else:
+                    checkboxVals[0] = False
+            case "-Optional2-":
+                if values["-Optional2-"]:
+                    checkboxVals[1] = True
+                else:
+                    checkboxVals[1] = False
+            case "-Optional3-":
+                if values["-Optional3-"]:
+                    checkboxVals[2] = True
+                else:
+                    checkboxVals[2] = False
+            case "-Optional4-":
+                if values["-Optional4-"]:
+                    checkboxVals[3] = True
+                else:
+                    checkboxVals[3] = False
+            case "-Optional5-":
+                if values["-Optional5-"]:
+                    checkboxVals[4] = True
+                else:
+                    checkboxVals[4] = False
+        
+        personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData, checkboxVals, optional)
+        window['-COMMENT_OUTPUT-'].update(personalComment)
 
     # for input comment box
     if event == '-COMMENT_INPUT-':
@@ -278,7 +372,7 @@ while True:
         if headers == None:
             window['-COMMENT_OUTPUT-'].update(values['-COMMENT_INPUT-'])
         else:
-            personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData)
+            personalComment = generateStudentComment(commentInput, currentStudentIndex, headers, studentData, checkboxVals, optional)
             window['-COMMENT_OUTPUT-'].update(personalComment)
 
 # closes window if 'X' button is clicked
